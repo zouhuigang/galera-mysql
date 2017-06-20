@@ -242,7 +242,47 @@ nodea,nodec上显示：
 	+----+-------+------+--------+
 	|  4 | World | NULL | NULL   | 
 	+----+-------+------+--------+
+
+
+### 搭配haproxy使用
+
+nodea上安装,也可在随意一台服务器上:
+
+		yum install -y haproxy #安装
+
+		systemctl start haproxy #启动
 	
+将本库文件haproxy.cfg上传并替换/etc/haproxy/haproxy.cfg：
+
+重启haproxy：
+	
+	systemctl restart haproxy
+
+浏览器访问haproxy:
+
+	http://192.168.122.138:4399/admin?stats
+
+	用户名:zouhuigang
+
+	密码:zouhuigang123456
+
+
+navicat访问：
+
+	链接：192.168.122.138 端口:3306
+
+	用户名:root 密码：空
+
+
+插入一条数据：
+
+	insert into students (name) values ("haproxy"); 
+
+
+查看全部数据，发现已全部同步到三台服务器中。
+
+
+
 
 参考文档：
 
@@ -255,6 +295,10 @@ nodea,nodec上显示：
 [http://blog.csdn.net/cloud952788/article/details/39643921](http://blog.csdn.net/cloud952788/article/details/39643921)
 
 [http://www.openskill.cn/article/400](http://www.openskill.cn/article/400)
+
+[http://lanxianting.blog.51cto.com/7394580/1787391/](http://lanxianting.blog.51cto.com/7394580/1787391/)
+
+[https://www.nginx.com/blog/mysql-high-availability-with-nginx-plus-and-galera-cluster/](https://www.nginx.com/blog/mysql-high-availability-with-nginx-plus-and-galera-cluster/)
 
 官方文档：
 
