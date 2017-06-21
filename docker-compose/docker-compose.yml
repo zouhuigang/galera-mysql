@@ -1,0 +1,47 @@
+version: "2"
+services:
+    node1:
+      container_name: node1
+      image: erkules/galera:latest
+      restart: always
+      ports:
+          - "3307:3306"
+      environment:
+          MYSQL_ROOT_PASSWORD: galera123456
+          MYSQL_USER: zouhuigang
+          MYSQL_PASSWORD: zouhuigang
+      networks:
+          - galera-mysql
+      command: --wsrep-cluster-name=zouhuigang --wsrep-cluster-address=gcomm:// --wsrep-sst-receive-address=node1:4444 --wsrep-provider-options="ist.recv_addr=node1:4568" --wsrep-node-address=node1:4567
+    
+    node2:
+      container_name: node2
+      image: erkules/galera:latest
+      restart: always
+      ports:
+          - "3308:3306"
+      environment:
+          MYSQL_ROOT_PASSWORD: galera123456
+          MYSQL_USER: zouhuigang
+          MYSQL_PASSWORD: zouhuigang
+      networks:
+          - galera-mysql
+      command: --wsrep-cluster-name=zouhuigang --wsrep-cluster-address=gcomm://node1 --wsrep-sst-receive-address=node2:4444 --wsrep-provider-options="ist.recv_addr=node2:4568" --wsrep-node-address=node2:4567
+    
+    node3:
+      container_name: node3
+      image: erkules/galera:latest
+      restart: always
+      ports:
+          - "3309:3306"
+      environment:
+          MYSQL_ROOT_PASSWORD: galera123456
+          MYSQL_USER: zouhuigang
+          MYSQL_PASSWORD: zouhuigang
+      networks:
+          - galera-mysql
+      command: --wsrep-cluster-name=zouhuigang --wsrep-cluster-address=gcomm://node1  --wsrep-sst-receive-address=node3:4444 --wsrep-provider-options="ist.recv_addr=node3:4568" --wsrep-node-address=node3:4567
+   
+#    
+networks:
+  galera-mysql:
