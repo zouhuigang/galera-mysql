@@ -34,6 +34,23 @@ nodec:
 	docker run -d -p 4307:3306 -p 5570:5570 -p 5445:5445 -p 5571:5571 -e MYSQL_ROOT_PASSWORD=password --name nodec erkules/galera:latest --wsrep-cluster-address=gcomm://10.174.155.169:5567 --wsrep-node-address=10.174.155.169:5570 --wsrep-sst-receive-address=10.174.155.169:5445 --wsrep_provider_options="base_port=5570;" --wsrep-provider-options="ist.recv_addr=10.174.155.169:5571"
 
 
+数据持久化：
+
+	docker run -d -p 4307:3306 -p 5570:5570 -p 5445:5445 -p 5571:5571 -v /mnt2/mysql-data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=password --name nodec erkules/galera:latest --wsrep-cluster-address=gcomm://10.174.155.169:5567 --wsrep-node-address=10.174.155.169:5570 --wsrep-sst-receive-address=10.174.155.169:5445 --wsrep_provider_options="base_port=5570;" --wsrep-provider-options="ist.recv_addr=10.174.155.169:5571"
+
+
+
+nodea故障的处理，将docker删除之后，不要再用
+
+	
+	docker run -d -p 4306:3306 -p 5567:5567 -p 5444:5444 -p 5568:5568  -e MYSQL_ROOT_PASSWORD=password  --name nodea erkules/galera:latest --wsrep-cluster-address=gcomm:// --wsrep-node-address=10.174.113.12:5567 --wsrep-sst-receive-address=10.174.113.12:5444 --wsrep-provider-options="ist.recv_addr=10.174.113.12:5568"
+
+因为这个会创建新的集群，不会链接之前的nodeb,nodec。要用这个：
+
+	docker run -d -p 4306:3306 -p 5567:5567 -p 5444:5444 -p 5568:5568  -e MYSQL_ROOT_PASSWORD=password  --name nodea erkules/galera:latest --wsrep-cluster-address=gcomm://10.174.155.169:5567,10.174.155.169:5570 --wsrep-node-address=10.174.113.12:5567 --wsrep-sst-receive-address=10.174.113.12:5444 --wsrep-provider-options="ist.recv_addr=10.174.113.12:5568"
+	
+
+
 
 注：使用时，将上述password替换为自己想要的mysql登录密码。
 
