@@ -2,6 +2,11 @@
 
 	docker pull index.tenxcloud.com/google_containers/mysql-galera:e2e
 
+	官方镜像库：
+
+	https://hub.docker.com/r/erkules/galera/
+
+	https://github.com/erkules/codership-images
 
 
 
@@ -287,6 +292,111 @@ navicat访问：
 	
 	docker-compose的实现
 
+
+
+问题：
+
+Q1：当导入数据时，一张表有很多数据的时候，不能及时同步过去。
+
+A1:MySQL/Galera集群只支持InnoDB存储引擎。如果你的数据表使用的InnoDB，需要转换为InnoDB，否则记录不会在多台复制。
+
+	修改表类型:
+	ALTER TABLE `pingan` ENGINE = INNODB;  #pingan表名字
+
+	查看表类型:
+	SHOW table STATUS FROM yy_sys;  #yy_sys数据库名字
+
+	查看表创建的信息：
+	SHOW CREATE TABLE `pingan`;
+
+导出去掉表类型：
+
+压缩：
+
+	mysqldump  -P 3306 -h 127.0.0.1 -u 'tywyadmin' -p'tywyADMIN@20)^'  -R yy_sys --skip-create-options | gzip  > /mnt2/mysql-backup/yy_sys_2017_6_21.sql.gz
+
+
+不压缩：
+
+	mysqldump  -P 3306 -h 127.0.0.1 -u 'tywyadmin' -p'tywyADMIN@20)^'  -R yy_sys --skip-create-options  > /mnt2/mysql-backup/yy_sys_2017_6_21.sql
+
+
+
+
+Q2：导入问题，[Err] 2006 - MySQL server has gone away,[Err] INSERT INTO `m_userinfo` VALUES 
+
+查看mysql的运行时长:
+
+	show global status like 'uptime';
+
+mysql链接超时,查看
+
+	show global variables like '%timeout';
+
+	wait_timeout 是28800秒，即mysql链接在无操作28800秒后被自动关闭
+
+查看是mysql允许最大的数据包，也就是你发送的请求：
+
+	show global variables like 'max_allowed_packet';
+
+	修改为100M：
+	set global max_allowed_packet=1024*1024*100;
+
+Q3:[Err] 1047 - WSREP has not yet prepared node for application use
+
+A3:带处理
+
+
+
+一些命令：
+
+	MariaDB [(none)]> show variables like 'wsrep_on';
+	+---------------+-------+
+	| Variable_name | Value |
+	+---------------+-------+
+	| wsrep_on      | ON    |
+	+---------------+-------+
+	 
+	MariaDB [(none)]> show status like 'wsrep_connected';
+	+-----------------+-------+
+	| Variable_name   | Value |
+	+-----------------+-------+
+	| wsrep_connected | ON    |
+	+-----------------+-------+
+	 
+	MariaDB [(none)]> show status like 'wsrep_ready';
+	+---------------+-------+
+	| Variable_name | Value |
+	+---------------+-------+
+	| wsrep_ready   | ON    |
+	+---------------+-------+
+
+	wsrep_on 值为ON则说明启动成功。
+	wsrep_connected值为ON说明连接到了集群。
+	wsrep_ready值为ON说明已经准备好接受SQL请求了。该值最关键
+
+
+注意事项：
+
+1、使用Galera必须要给MySQL-Server打wsrep补丁。可以直接使用官方提供的已经打好补丁的MySQL安装包，如果服务器上已经安装了标准版MYSQL，需要先卸载再重新安装。卸载前注意备份数据。
+
+2、MySQL/Galera集群只支持InnoDB存储引擎。如果你的数据表使用的InnoDB，需要转换为InnoDB，否则记录不会在多台复制。可以在备份老数据时，为mysqldump命令添加–skip-create-options参数，这样会去掉表结构的声明信息，再导入集群时自动使用InnoDB引擎。不过这样会将AUTO_INCREMENT一并去掉，已有AUTO_INCREMENT列的表，必须在导入后重新定义。
+
+3、MySQL 5.5及以下的InnoDB引擎不支持全文索引（FULLTEXT indexes），如果之前使用InnoDB并建了全文索引字段的话，只能安装MySQL 5.6 with wsrep patch。
+
+4、所有数据表必须要有主键（PRIMARY）,如果没有主键可以建一条AUTO_INCREMENT列。
+
+5、MySQL/Galera集群不支持下面的查询：LOCK/UNLOCK TABLES，不支持下面的系统变量：character_set_server、utf16、utf32及ucs2。
+
+6、数据库日志不支持保存到表，只能输出到文件（log_output = FILE），不能设置binlog-do-db、binlog-ignore-db。
+
+7、跟其他集群一样，为了避免节点出现脑裂而破坏数据，建议Galera集群最低添加3个节点。
+
+8、在高并发的情况下，多主同时写入时可能会发生事务冲突，此时只有一个事务请求会成功，其他的全部失败。可以在写入/更新失败时，自动重试一次，再返回结果。
+
+9、节点中每个节点的地位是平等的，没有主次，向任何一个节点读写效果都是一样的。实际可以配合VIP/LVS或HA使用，实现高可用性。
+
+10、如果集群中的机器全部重启，如机房断电，第一台启动的服务器必须以空地址启动：mysqld_safe –wsrep_cluster_address=gcomm:// >/dev/null &
 
 参考文档：
 
